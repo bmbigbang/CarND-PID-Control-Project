@@ -1,5 +1,6 @@
 #ifndef PID_H
 #define PID_H
+#include <iostream>
 
 class PID {
 public:
@@ -16,6 +17,11 @@ public:
   double Kp;
   double Ki;
   double Kd;
+
+  // place holders for cross track and sum of cross track
+  double last_cte;
+  double sum_cte;
+  double diff_cte;
 
   /*
   * Constructor
