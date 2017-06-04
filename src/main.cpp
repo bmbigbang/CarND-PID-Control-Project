@@ -33,8 +33,7 @@ int main()
   uWS::Hub h;
 
   PID pid;
-  // TODO: Initialize the pid variable.
-  pid.Init(1, 1, 1);
+  pid.Init(-0.13, 22.5, 0.14);
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -53,25 +52,31 @@ int main()
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value = 0.0;
           /*
-          * TODO: Calcuate steering value here, remember the steering value is
           * [-1, 1].
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
-          double *coeff[3] = {&pid.Kp, &pid.Ki, &pid.Kd};
 
-
+          if (pid.last_cte == 0) {
+            pid.last_cte = cte;
+          }
+          // calculate PID parameters
           pid.diff_cte = cte - pid.last_cte;
           pid.last_cte = cte;
-          pid.sum_cte += cte;
-          steer_value = (pid.Kp * cte) - (pid.Kd * pid.diff_cte) - (pid.Ki * pid.sum_cte);
+          pid.UpdateError(cte);
+          steer_value = (pid.Kp * cte) - (pid.Kd * pid.diff_cte) - (pid.Ki * pid.TotalError());
           
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          if (speed > 35) {
+            msgJson["throttle"] = 0.05;
+          }
+          else {
+            msgJson["throttle"] = 0.4;
+          }
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
